@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Sand Timer</title>
+<meta name="description" content="A big friendly sand timer for young children.">
+<meta name="theme-color" content="#A7E3F2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sand Timer">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --sky-1:   #A7E3F2;
+    --sky-2:   #D6F3E4;
+    --sky-3:   #FFF1CF;
+    --coral:   #FF7A59;
+    --coral-d: #E2573A;
+    --sand:    #FFD45E;
+    --sand-d:  #F0A312;
+    --leaf:    #4FC79B;
+    --leaf-d:  #35A87E;
+    --ink:     #2A4A5B;
+    --cream:   #FFF9EE;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+
+  html,body{ height:100%; overscroll-behavior:none; background:var(--sky-2); }
+
+  body{
+    font-family: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color:var(--ink);
+    -webkit-user-select:none; user-select:none;
+    touch-action:manipulation;
+    background:linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 58%, var(--sky-3) 100%);
+  }
+
+  /* ---- sky decoration ---- */
+  .sky{ position:fixed; inset:0; overflow:hidden; pointer-events:none; }
+  .sun{
+    position:absolute; top:-54px; right:-46px;
+    width:190px; height:190px; border-radius:50%;
+    background:radial-gradient(circle, #FFE9A8 0%, rgba(255,233,168,0) 70%);
+  }
+  .cloud{
+    position:absolute;
+    background:#FFFFFF; opacity:.7;
+    border-radius:999px;
+  }
+  .cloud::before, .cloud::after{
+    content:""; position:absolute; background:inherit; border-radius:50%;
+  }
+  .c1{ top:9%;  left:-18px; width:132px; height:40px; }
+  .c1::before{ width:56px; height:56px; top:-24px; left:24px; }
+  .c1::after { width:40px; height:40px; top:-16px; left:72px; }
+  .c2{ top:22%; right:-24px; width:104px; height:32px; opacity:.55; }
+  .c2::before{ width:46px; height:46px; top:-20px; left:18px; }
+  .c2::after { width:32px; height:32px; top:-12px; left:56px; }
+  .hill{
+    position:absolute; left:-12%; right:-12%; bottom:-96px;
+    height:210px; border-radius:50% 50% 0 0;
+    background:rgba(79,199,155,.22);
+  }
+
+  /* ---- layout ---- */
+  .app{
+    position:relative;
+    height:100dvh;
+    display:grid;
+    grid-template-rows:auto 1fr auto auto auto;
+    padding:
+      calc(env(safe-area-inset-top) + 10px)
+      calc(env(safe-area-inset-right) + 16px)
+      calc(env(safe-area-inset-bottom) + 14px)
+      calc(env(safe-area-inset-left) + 16px);
+    max-width:520px;
+    margin:0 auto;
+  }
+
+  .bar{ display:flex; align-items:center; justify-content:space-between; min-height:46px; }
+
+  .readout{
+    font-size:20px; font-weight:700;
+    font-variant-numeric:tabular-nums;
+    color:var(--ink); opacity:.6;
+    background:var(--cream);
+    padding:6px 14px; border-radius:999px;
+    box-shadow:0 2px 0 rgba(42,74,91,.12);
+  }
+  .readout.done{ color:var(--leaf-d); opacity:1; }
+
+  .install{
+    display:flex; align-items:center; gap:7px;
+    height:42px; padding:0 16px;
+    border:0; border-radius:999px;
+    background:var(--leaf); color:#fff;
+    box-shadow:0 3px 0 var(--leaf-d);
+    font:inherit; font-size:16px; font-weight:800;
+    cursor:pointer;
+  }
+  .install[hidden]{ display:none; }
+  .install svg{ width:17px; height:17px; }
+  .install:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--leaf-d); }
+
+  .lock{
+    width:46px; height:46px;
+    display:grid; place-items:center;
+    border:0; border-radius:50%;
+    background:var(--cream);
+    color:var(--ink);
+    box-shadow:0 2px 0 rgba(42,74,91,.12);
+    cursor:pointer;
+  }
+  .lock[data-locked="true"]{ background:var(--coral); color:#fff; }
+  .lock.holding{
+    background:linear-gradient(to right, var(--leaf) 0 100%) no-repeat left / 0% 100%, var(--coral);
+    animation:fill 1.2s linear forwards;
+  }
+  @keyframes fill{ to{ background-size:100% 100%; } }
+  .lock svg{ width:21px; height:21px; }
+
+  .stage{ min-height:0; display:block; }
+  #glass{ width:100%; height:100%; display:block; cursor:pointer; }
+
+  .caption{
+    min-height:38px;
+    display:grid; place-items:center;
+    font-size:17px; font-weight:600;
+    color:var(--ink); opacity:.62;
+    text-align:center; padding-top:8px;
+  }
+  .caption.cheer{ font-size:30px; font-weight:800; color:var(--leaf-d); opacity:1; }
+
+  .stop{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%; min-height:64px;
+    margin-top:12px;
+    border:0; border-radius:22px;
+    background:var(--leaf);
+    color:#fff;
+    box-shadow:0 4px 0 var(--leaf-d);
+    font:inherit; font-size:20px; font-weight:800;
+    cursor:pointer;
+    animation:breathe 1.1s ease-in-out infinite;
+  }
+  .stop[hidden]{ display:none; }
+  .stop svg{ width:24px; height:24px; }
+  .stop:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--leaf-d); }
+  @keyframes breathe{ 50%{ background:#6FD9B3; } }
+
+  .presets{ display:flex; gap:8px; justify-content:center; padding-top:12px; }
+  .chip{
+    flex:1 1 0; min-width:50px; min-height:54px;
+    border:0; border-radius:18px;
+    background:var(--cream);
+    color:var(--ink);
+    box-shadow:0 3px 0 rgba(42,74,91,.15);
+    font:inherit; font-size:17px; font-weight:800;
+    cursor:pointer;
+  }
+  .chip:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(42,74,91,.15); }
+  .chip[aria-pressed="true"]{
+    background:var(--coral); color:#fff;
+    box-shadow:0 3px 0 var(--coral-d);
+  }
+
+  .app[data-locked="true"] .presets{ opacity:.35; pointer-events:none; }
+
+  :focus-visible{ outline:3px solid var(--coral-d); outline-offset:3px; }
+
+  /* ---- character animation ---- */
+  .eye{ transform-box:fill-box; transform-origin:center; animation:blink 5.5s infinite; }
+  #eyeR{ animation-delay:.12s; }
+  @keyframes blink{ 0%,93%,100%{ transform:scaleY(1); } 96%{ transform:scaleY(.08); } }
+
+  .pupil{ transition:transform .4s ease; }
+  #glass.is-running .pupil{ transform:translateY(2.5px); }
+
+  #happyEyes{ opacity:0; }
+  #glass.is-done #happyEyes{ opacity:1; }
+  #glass.is-done #eyeL, #glass.is-done #eyeR{ opacity:0; }
+
+  #mouthSmile{ opacity:0; }
+  #glass.is-done #mouthSmile{ opacity:1; }
+  #glass.is-done #mouthIdle{ opacity:0; }
+
+  #body{ transform-box:fill-box; transform-origin:50% 100%; }
+  #glass.is-done #body{ animation:hop 1.05s ease-in-out infinite; }
+  @keyframes hop{
+    0%,100%{ transform:translateY(0) scaleY(1); }
+    40%    { transform:translateY(-9px) scaleY(1.015); }
+    70%    { transform:translateY(0) scaleY(.985); }
+  }
+
+  #sparkles{ opacity:0; }
+  #glass.is-done #sparkles{ opacity:1; }
+  #glass.is-done .spark{
+    transform-box:fill-box; transform-origin:center;
+    animation:pop 1.5s ease-in-out infinite;
+  }
+  .spark:nth-of-type(2){ animation-delay:.18s; }
+  .spark:nth-of-type(3){ animation-delay:.36s; }
+  .spark:nth-of-type(4){ animation-delay:.54s; }
+  .spark:nth-of-type(5){ animation-delay:.72s; }
+  .spark:nth-of-type(6){ animation-delay:.9s;  }
+  @keyframes pop{
+    0%,100%{ transform:scale(.25) rotate(-12deg); opacity:0; }
+    45%    { transform:scale(1) rotate(10deg);   opacity:1; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .grain, #sparkles{ display:none; }
+    .eye, #glass.is-done #body, .stop{ animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true">
+  <div class="sun"></div>
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="hill"></div>
+</div>
+
+<div class="app" id="app" data-locked="false">
+
+  <header class="bar">
+    <span class="readout" id="readout">2:00</span>
+
+    <button class="install" id="install" type="button" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v12"></path><path d="M7 11l5 5 5-5"></path><path d="M4 20h16"></path>
+      </svg>
+      Install
+    </button>
+    <button class="lock" id="lock" data-locked="false" aria-label="Child lock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="4" y="10" width="16" height="11" rx="3.5"></rect>
+        <path id="shackle" d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+      </svg>
+    </button>
+  </header>
+
+  <main class="stage">
+    <svg id="glass" viewBox="-26 0 272 382" role="img" aria-label="Sand timer">
+      <defs>
+        <linearGradient id="gSand" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FFE28A"/>
+          <stop offset="100%" stop-color="#F0A312"/>
+        </linearGradient>
+        <linearGradient id="gCoral" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FF9070"/>
+          <stop offset="100%" stop-color="#EC6344"/>
+        </linearGradient>
+
+        <clipPath id="clipTop">
+          <path d="M58 70 H162 Q174 70 168 80 L116 184 Q110 194 104 184 L52 80 Q46 70 58 70 Z"/>
+        </clipPath>
+        <clipPath id="clipBottom">
+          <path d="M116 200 L168 304 Q174 314 162 314 H58 Q46 314 52 304 L104 200 Q110 190 116 200 Z"/>
+        </clipPath>
+      </defs>
+
+      <g id="body">
+        <!-- feet -->
+        <ellipse cx="68" cy="358" rx="26" ry="13" fill="var(--coral-d)"/>
+        <ellipse cx="152" cy="358" rx="26" ry="13" fill="var(--coral-d)"/>
+
+        <!-- side posts -->
+        <rect x="24" y="52" width="20" height="280" rx="10" fill="url(#gCoral)"/>
+        <rect x="176" y="52" width="20" height="280" rx="10" fill="url(#gCoral)"/>
+
+        <!-- glass -->
+        <path d="M58 70 H162 Q174 70 168 80 L116 184 Q110 194 104 184 L52 80 Q46 70 58 70 Z" fill="#FFFFFF" opacity=".62"/>
+        <path d="M116 200 L168 304 Q174 314 162 314 H58 Q46 314 52 304 L104 200 Q110 190 116 200 Z" fill="#FFFFFF" opacity=".62"/>
+
+        <!-- sand -->
+        <g clip-path="url(#clipTop)">
+          <path id="sandTop" fill="url(#gSand)"/>
+        </g>
+        <g clip-path="url(#clipBottom)">
+          <path id="sandBottom" fill="url(#gSand)"/>
+        </g>
+
+        <!-- falling sand -->
+        <g id="stream" opacity="0">
+          <rect id="streamRect" x="108.6" y="188" width="2.8" height="0" fill="var(--sand-d)" rx="1.4"/>
+          <circle class="grain" r="2.2" fill="#F2A20C"/>
+          <circle class="grain" r="1.7" fill="#F5B324"/>
+          <path class="grain grain-star" d="M0 -4 L1.2 -1.3 4 -1.3 1.7 .6 2.6 3.6 0 1.8 -2.6 3.6 -1.7 .6 -4 -1.3 -1.2 -1.3 Z" fill="#F7C13A"/>
+          <path class="grain grain-star" d="M0 -3 L.9 -1 3 -1 1.3 .4 2 2.7 0 1.4 -2 2.7 -1.3 .4 -3 -1 -.9 -1 Z" fill="#F7C13A"/>
+        </g>
+
+        <!-- glass outline -->
+        <path d="M58 70 H162 Q174 70 168 80 L116 184 Q110 194 104 184 L52 80 Q46 70 58 70 Z"
+              fill="none" stroke="#5E93A6" stroke-opacity=".45" stroke-width="3.5"/>
+        <path d="M116 200 L168 304 Q174 314 162 314 H58 Q46 314 52 304 L104 200 Q110 190 116 200 Z"
+              fill="none" stroke="#5E93A6" stroke-opacity=".45" stroke-width="3.5"/>
+
+        <!-- bottom cap -->
+        <rect x="20" y="312" width="180" height="38" rx="19" fill="url(#gCoral)"/>
+        <rect x="34" y="320" width="152" height="8" rx="4" fill="#FFFFFF" opacity=".25"/>
+
+        <!-- head cap with face -->
+        <rect x="20" y="12" width="180" height="52" rx="26" fill="url(#gCoral)"/>
+        <rect x="34" y="20" width="152" height="9" rx="4.5" fill="#FFFFFF" opacity=".28"/>
+
+        <g id="eyeL" class="eye">
+          <circle cx="88" cy="40" r="10.5" fill="#FFF9EE"/>
+          <circle class="pupil" cx="88" cy="40" r="5" fill="#2A4A5B"/>
+          <circle cx="90.4" cy="37.4" r="1.7" fill="#FFFFFF"/>
+        </g>
+        <g id="eyeR" class="eye">
+          <circle cx="132" cy="40" r="10.5" fill="#FFF9EE"/>
+          <circle class="pupil" cx="132" cy="40" r="5" fill="#2A4A5B"/>
+          <circle cx="134.4" cy="37.4" r="1.7" fill="#FFFFFF"/>
+        </g>
+
+        <g id="happyEyes" fill="none" stroke="#2A4A5B" stroke-opacity=".75" stroke-width="4.5" stroke-linecap="round">
+          <path d="M79 44 Q88 32 97 44"/>
+          <path d="M123 44 Q132 32 141 44"/>
+        </g>
+
+        <path id="mouthIdle"  d="M104 55 Q110 60 116 55" fill="none" stroke="#2A4A5B" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/>
+        <path id="mouthSmile" d="M98 52 Q110 65 122 52 Q110 58 98 52 Z" fill="#2A4A5B" fill-opacity=".7"/>
+
+        <!-- rosy cheeks -->
+        <circle cx="68" cy="50" r="6.5" fill="#FF5C7A" opacity=".28"/>
+        <circle cx="152" cy="50" r="6.5" fill="#FF5C7A" opacity=".28"/>
+      </g>
+
+      <!-- sparkle burst, shown when time is up -->
+      <g id="sparkles" fill="#FFC93C">
+        <path class="spark" d="M-8 86 l5 11 11 5 -11 5 -5 11 -5-11 -11-5 11-5 z"/>
+        <path class="spark" d="M218 118 l5 11 11 5 -11 5 -5 11 -5-11 -11-5 11-5 z"/>
+        <path class="spark" d="M-16 210 l4 9 9 4 -9 4 -4 9 -4-9 -9-4 9-4 z"/>
+        <path class="spark" d="M226 232 l4 9 9 4 -9 4 -4 9 -4-9 -9-4 9-4 z"/>
+        <path class="spark" d="M-14 330 l3.4 7.6 7.6 3.4 -7.6 3.4 -3.4 7.6 -3.4-7.6 -7.6-3.4 7.6-3.4 z"/>
+        <path class="spark" d="M222 344 l3.4 7.6 7.6 3.4 -7.6 3.4 -3.4 7.6 -3.4-7.6 -7.6-3.4 7.6-3.4 z"/>
+      </g>
+    </svg>
+  </main>
+
+  <div class="caption" id="caption">Tap to start</div>
+
+  <button class="stop" id="stop" type="button" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+      <path d="M10.3 21a2 2 0 0 0 3.4 0"></path>
+      <path d="M3 3l18 18"></path>
+    </svg>
+    Stop the bell
+  </button>
+
+  <nav class="presets" id="presets" aria-label="Timer length"></nav>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- hourglass geometry (matches the SVG above) ---------- */
+  var CX = 110, TOP_Y = 70, NECK = 188, BOT_APEX = 196, BOT_BASE = 314;
+  var BULB_H = NECK - TOP_Y;   // 118
+  var HALF_W = 62;
+
+  /* ---------- elements ---------- */
+  var app        = document.getElementById("app");
+  var glass      = document.getElementById("glass");
+  var sandTop    = document.getElementById("sandTop");
+  var sandBot    = document.getElementById("sandBottom");
+  var stream     = document.getElementById("stream");
+  var streamRect = document.getElementById("streamRect");
+  var grains     = Array.prototype.slice.call(document.querySelectorAll(".grain"));
+  var readout    = document.getElementById("readout");
+  var caption    = document.getElementById("caption");
+  var lockBtn    = document.getElementById("lock");
+  var shackle    = document.getElementById("shackle");
+  var presetsEl  = document.getElementById("presets");
+  var stopBtn    = document.getElementById("stop");
+
+  /* ---------- settings ---------- */
+  var PRESETS  = [30, 60, 120, 180, 300, 600];  // seconds
+  var RING_MS  = 10000;                         // how long the bell keeps ringing
+  var RING_GAP = 1200;                          // milliseconds between rings
+
+  /* ---------- state ---------- */
+  var duration = load("duration", 120) * 1000;
+  var remaining = duration;
+  var endAt = 0;
+  var running = false;
+  var finished = false;
+  var locked = false;
+  var wakeLock = null;
+
+  /* ---------- presets ---------- */
+  PRESETS.forEach(function (secs) {
+    var b = document.createElement("button");
+    b.className = "chip";
+    b.type = "button";
+    b.textContent = secs < 60 ? secs + "s" : (secs / 60) + "m";
+    b.setAttribute("aria-pressed", String(secs * 1000 === duration));
+    b.dataset.secs = String(secs);
+    b.addEventListener("click", function () { choose(secs); });
+    presetsEl.appendChild(b);
+  });
+
+  function choose(secs) {
+    duration = secs * 1000;
+    save("duration", secs);
+    reset();
+    Array.prototype.forEach.call(presetsEl.children, function (c) {
+      c.setAttribute("aria-pressed", String(Number(c.dataset.secs) === secs));
+    });
+  }
+
+  /* ---------- timer control ---------- */
+  function start() {
+    if (running) return;
+    unlockAudio();
+    stopRinging();
+    if (finished || remaining <= 0) remaining = duration;
+    finished = false;
+    endAt = Date.now() + remaining;
+    running = true;
+    requestWakeLock();
+    render();
+  }
+
+  function pause() {
+    if (!running) return;
+    remaining = Math.max(0, endAt - Date.now());
+    running = false;
+    releaseWakeLock();
+    render();
+  }
+
+  function reset() {
+    running = false;
+    finished = false;
+    remaining = duration;
+    stopRinging();
+    releaseWakeLock();
+    render();
+  }
+
+  function finish() {
+    running = false;
+    finished = true;
+    remaining = 0;
+    startRinging();          // releases the wake lock once the bell stops
+    render();
+  }
+
+  /* ---------- drawing ---------- */
+  function draw(fraction) {
+    var f = Math.max(0, Math.min(1, fraction));
+    var root = Math.sqrt(f);
+
+    // top bulb — sand drains toward the neck, with a funnel dip in the surface
+    var ys = NECK - BULB_H * root;
+    var hw = HALF_W * root;
+    if (f <= 0.0005) {
+      sandTop.setAttribute("d", "");
+    } else {
+      var dip = Math.min(10, 2 + 12 * (1 - f), (NECK - ys) / 2.5);
+      sandTop.setAttribute("d",
+        "M" + (CX - hw) + " " + ys +
+        " Q" + CX + " " + (ys + dip * 2) + " " + (CX + hw) + " " + ys +
+        " L" + CX + " " + NECK + " Z");
+    }
+
+    // bottom bulb — a cone of sand piles up under the stream
+    var g = 1 - f;
+    var yp = BOT_APEX + BULB_H * root;
+    var hwp = HALF_W * root;
+    var peak = 34 * Math.min(1, g / 0.2) * Math.min(1, (yp - BOT_APEX) / 55);
+    var peakY = Math.max(BOT_APEX + 2, yp - peak);
+    var edgeY = Math.min(BOT_BASE, yp + peak * 0.4);
+
+    if (f >= 0.9995) {
+      sandBot.setAttribute("d", "");
+    } else {
+      sandBot.setAttribute("d",
+        "M" + (CX - hwp) + " " + edgeY +
+        " L" + CX + " " + peakY +
+        " L" + (CX + hwp) + " " + edgeY +
+        " L174 " + BOT_BASE + " H46 Z");
+    }
+
+    // falling sand
+    var flowing = running && f > 0.0005 && f < 0.9995;
+    stream.setAttribute("opacity", flowing ? "1" : "0");
+    if (flowing) {
+      streamRect.setAttribute("height", String(Math.max(0, peakY - NECK)));
+      var t = Date.now() / 1000;
+      var span = Math.max(6, peakY - NECK);
+      grains.forEach(function (el, i) {
+        var p = (t * 1.15 + i / grains.length) % 1;
+        var x = CX + Math.sin(t * 6 + i * 2) * 2.4;
+        var y = NECK + p * span;
+        if (el.classList.contains("grain-star")) {
+          el.setAttribute("transform", "translate(" + x + " " + y + ") rotate(" + (t * 140 + i * 90) % 360 + ")");
+        } else {
+          el.setAttribute("cx", String(x));
+          el.setAttribute("cy", String(y));
+        }
+      });
+    }
+  }
+
+  function clock(ms) {
+    var s = Math.ceil(ms / 1000);
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return m + ":" + (r < 10 ? "0" : "") + r;
+  }
+
+  function render() {
+    var ms = running ? Math.max(0, endAt - Date.now()) : remaining;
+    draw(duration > 0 ? ms / duration : 0);
+
+    readout.textContent = finished ? "0:00" : clock(ms);
+    readout.classList.toggle("done", finished);
+    glass.classList.toggle("is-running", running);
+    glass.classList.toggle("is-done", finished);
+
+    if (finished) {
+      caption.textContent = "All done!";
+      caption.className = "caption cheer";
+    } else {
+      caption.className = "caption";
+      if (locked) caption.textContent = "Hold the lock to unlock";
+      else if (running) caption.textContent = "Tap to pause";
+      else if (ms < duration) caption.textContent = "Tap to keep going · hold to start over";
+      else caption.textContent = "Tap to start";
+    }
+  }
+
+  function loop() {
+    if (running) {
+      if (Date.now() >= endAt) finish();
+      else render();
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  /* ---------- tap = start/pause, hold = start over ---------- */
+  var holdTimer = null, held = false;
+
+  glass.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    if (locked) return;
+    held = false;
+    holdTimer = setTimeout(function () { held = true; reset(); }, 700);
+  });
+
+  glass.addEventListener("pointerup", function (e) {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    if (locked || held) return;
+    e.preventDefault();
+    if (ringing) stopRinging();
+    else if (finished) reset();
+    else if (running) pause();
+    else start();
+  });
+
+  glass.addEventListener("pointercancel", function () {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  });
+
+  /* ---------- child lock: tap to lock, hold 1.2s to unlock ---------- */
+  var lockHold = null, unlockedByHold = false;
+
+  function clearHold() {
+    if (lockHold) { clearTimeout(lockHold); lockHold = null; }
+    lockBtn.classList.remove("holding");
+  }
+
+  lockBtn.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    unlockedByHold = false;
+    if (!locked) return;
+    lockBtn.classList.add("holding");
+    lockHold = setTimeout(function () {
+      lockHold = null;
+      unlockedByHold = true;
+      lockBtn.classList.remove("holding");
+      setLocked(false);
+    }, 1200);
+  });
+
+  lockBtn.addEventListener("pointerup", function (e) {
+    e.preventDefault();
+    clearHold();
+    if (unlockedByHold) { unlockedByHold = false; return; }
+    if (!locked) setLocked(true);
+  });
+
+  lockBtn.addEventListener("pointercancel", clearHold);
+  lockBtn.addEventListener("pointerleave", clearHold);
+
+  function setLocked(v) {
+    locked = v;
+    app.dataset.locked = String(v);
+    lockBtn.dataset.locked = String(v);
+    lockBtn.setAttribute("aria-label", v ? "Locked — hold to unlock" : "Child lock");
+    shackle.setAttribute("d", v ? "M8 10V7a4 4 0 0 1 8 0v3" : "M8 10V7a4 4 0 0 1 7.5-2");
+    render();
+  }
+
+  /* ---------- the bell ---------- */
+  var ac = null;
+  var voices = [];
+  var ringing = false;
+  var ringTick = null;
+  var ringEnd = null;
+
+  function unlockAudio() {
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === "suspended") ac.resume();
+    } catch (e) { ac = null; }
+  }
+
+  function chime() {
+    if (!ac) return;
+    [523.25, 659.25, 783.99].forEach(function (freq, i) {
+      var t0 = ac.currentTime + i * 0.22;
+      var osc = ac.createOscillator();
+      var gain = ac.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.1);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(t0);
+      osc.stop(t0 + 1.2);
+      var voice = { osc: osc, gain: gain };
+      voices.push(voice);
+      osc.onended = function () {
+        var k = voices.indexOf(voice);
+        if (k > -1) voices.splice(k, 1);
+      };
+    });
+  }
+
+  function startRinging() {
+    ringing = true;
+    stopBtn.hidden = false;
+    chime();
+    ringTick = setInterval(chime, RING_GAP);
+    ringEnd = setTimeout(stopRinging, RING_MS);
+
+    if (navigator.vibrate) {
+      var pattern = [];
+      for (var t = 0; t < RING_MS; t += RING_GAP) pattern.push(220, RING_GAP - 220);
+      try { navigator.vibrate(pattern); } catch (e) {}
+    }
+  }
+
+  function stopRinging() {
+    if (ringTick) { clearInterval(ringTick); ringTick = null; }
+    if (ringEnd) { clearTimeout(ringEnd); ringEnd = null; }
+
+    if (ringing) {
+      ringing = false;
+      if (ac) {
+        var now = ac.currentTime;
+        voices.forEach(function (v) {
+          try {
+            v.gain.gain.cancelScheduledValues(now);
+            v.gain.gain.setValueAtTime(Math.max(0.0001, v.gain.gain.value), now);
+            v.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);  // fade, no click
+            v.osc.stop(now + 0.15);
+          } catch (e) {}
+        });
+      }
+      voices = [];
+      if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) {} }
+    }
+
+    stopBtn.hidden = true;
+    releaseWakeLock();
+  }
+
+  stopBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    stopRinging();
+  });
+
+  /* ---------- keep the screen awake ---------- */
+  function requestWakeLock() {
+    if (!("wakeLock" in navigator)) return;
+    navigator.wakeLock.request("screen").then(function (s) {
+      wakeLock = s;
+      s.addEventListener("release", function () { wakeLock = null; });
+    }).catch(function () { /* battery saver, http, unsupported */ });
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+      if (running) requestWakeLock();
+      render();
+    }
+  });
+
+  /* ---------- storage (never throws) ---------- */
+  function load(key, fallback) {
+    try { var v = localStorage.getItem("sandtimer." + key); return v === null ? fallback : Number(v); }
+    catch (e) { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem("sandtimer." + key, String(value)); } catch (e) {}
+  }
+
+  /* ---------- install button (Chrome / Edge / Samsung Internet) ---------- */
+  var installBtn = document.getElementById("install");
+  var deferredPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();                       // keep Chrome's own mini-banner out of the way
+    deferredPrompt = e;
+    var standalone = false;
+    try { standalone = window.matchMedia("(display-mode: standalone)").matches; } catch (err) {}
+    if (!standalone) installBtn.hidden = false;
+  });
+
+  installBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    if (!deferredPrompt) return;
+    installBtn.hidden = true;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+  });
+
+  window.addEventListener("appinstalled", function () {
+    installBtn.hidden = true;
+    deferredPrompt = null;
+  });
+
+  /* ---------- offline support ---------- */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
