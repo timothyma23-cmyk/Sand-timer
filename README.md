@@ -2,7 +2,9 @@
 
 A big friendly hourglass for young children. Sand drains from the top bulb and
 piles up as a cone in the bottom one, so a child can see how much time is left
-without reading numbers. The timer has a face: it watches the sand fall while it
+without reading numbers. Set any length from 5 seconds to 99:59 with the − / +
+buttons or by typing it on a number pad, and the layout rearranges itself when you
+turn the phone sideways. The timer has a face: it watches the sand fall while it
 runs, and when the time is up it closes its eyes, smiles, bounces, and stars pop
 around it while a soft bell rings for ten seconds.
 
@@ -12,7 +14,8 @@ around it while a soft bell rings for ten seconds.
 |---|---|
 | Tap the timer | Start / pause (or silence the bell, if it's ringing) |
 | Press and hold the timer (0.7s) | Start over from full |
-| Tap a preset | Change the length (30s, 1, 2, 3, 5, 10 minutes) |
+| Tap **−** / **+** | Change the length in 30-second steps |
+| Tap the time in the middle | Open a number pad and type any length |
 | Tap **Stop the bell** | Silence the bell straight away |
 | Tap the padlock | Child lock — taps and presets stop working |
 | Hold the padlock (1.2s) | Unlock |
@@ -88,7 +91,9 @@ first load, and behaves the same afterwards.
 
 Everything lives in `index.html`, near the top of the `<script>` block.
 
-- **Timer lengths** — `var PRESETS = [30, 60, 120, 180, 300, 600];` (seconds).
+- **Step size for − / +** — `var STEP_SECONDS = 30;`.
+- **Shortest and longest allowed** — `var MIN_SECONDS = 5;` and `var MAX_SECONDS`
+  (99:59 by default).
 - **How long the bell rings** — `var RING_MS = 10000;` (milliseconds).
 - **Gap between rings** — `var RING_GAP = 1200;`. Lower it for a more insistent
   bell, raise it for a gentler one.
@@ -99,7 +104,7 @@ Everything lives in `index.html`, near the top of the `<script>` block.
   note frequencies (C5–E5–G5), and `0.22` in the gain ramp is the volume.
 - **Hold-to-restart delay** — the `700` in the `pointerdown` handler on the glass.
 
-After editing, bump `const CACHE = "sand-timer-v4"` in `sw.js` to `v5`, or installed
+After editing, bump `const CACHE = "sand-timer-v5"` in `sw.js` to `v6`, or installed
 phones will keep serving the old cached version.
 
 ## Known limitations

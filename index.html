@@ -72,6 +72,7 @@
     position:relative;
     height:100dvh;
     display:grid;
+    grid-template-areas:"bar" "stage" "caption" "stop" "dial";
     grid-template-rows:auto 1fr auto auto auto;
     padding:
       calc(env(safe-area-inset-top) + 10px)
@@ -82,7 +83,7 @@
     margin:0 auto;
   }
 
-  .bar{ display:flex; align-items:center; justify-content:space-between; min-height:46px; }
+  .bar{ grid-area:bar; display:flex; align-items:center; justify-content:space-between; min-height:46px; }
 
   .readout{
     font-size:20px; font-weight:700;
@@ -124,10 +125,11 @@
   @keyframes fill{ to{ background-size:100% 100%; } }
   .lock svg{ width:21px; height:21px; }
 
-  .stage{ min-height:0; display:block; }
+  .stage{ grid-area:stage; min-height:0; display:block; }
   #glass{ width:100%; height:100%; display:block; cursor:pointer; }
 
   .caption{
+    grid-area:caption;
     min-height:38px;
     display:grid; place-items:center;
     font-size:17px; font-weight:600;
@@ -137,6 +139,7 @@
   .caption.cheer{ font-size:30px; font-weight:800; color:var(--leaf-d); opacity:1; }
 
   .stop{
+    grid-area:stop;
     display:flex; align-items:center; justify-content:center; gap:10px;
     width:100%; min-height:64px;
     margin-top:12px;
@@ -153,23 +156,101 @@
   .stop:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--leaf-d); }
   @keyframes breathe{ 50%{ background:#6FD9B3; } }
 
-  .presets{ display:flex; gap:8px; justify-content:center; padding-top:12px; }
-  .chip{
-    flex:1 1 0; min-width:50px; min-height:54px;
-    border:0; border-radius:18px;
-    background:var(--cream);
-    color:var(--ink);
+  /* ---- duration dial ---- */
+  .dial{ grid-area:dial; display:flex; gap:10px; padding-top:12px; }
+
+  .step{
+    width:66px; min-height:66px;
+    border:0; border-radius:20px;
+    background:var(--cream); color:var(--ink);
     box-shadow:0 3px 0 rgba(42,74,91,.15);
-    font:inherit; font-size:17px; font-weight:800;
+    font:inherit; font-size:30px; font-weight:800; line-height:1;
     cursor:pointer;
   }
-  .chip:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(42,74,91,.15); }
-  .chip[aria-pressed="true"]{
-    background:var(--coral); color:#fff;
-    box-shadow:0 3px 0 var(--coral-d);
+  .step:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(42,74,91,.15); }
+  .step:disabled{ opacity:.4; }
+
+  .timeset{
+    flex:1; min-height:66px;
+    display:grid; place-items:center; gap:1px;
+    border:0; border-radius:20px;
+    background:var(--cream); color:var(--ink);
+    box-shadow:0 3px 0 rgba(42,74,91,.15);
+    font:inherit; cursor:pointer;
+  }
+  .timeset:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(42,74,91,.15); }
+  .timeset b{ font-size:27px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .timeset span{ font-size:12px; font-weight:600; opacity:.5; }
+
+  /* ---- number pad ---- */
+  .sheet{
+    position:fixed; inset:0; z-index:20;
+    display:grid; place-items:center;
+    padding:16px;
+    background:rgba(42,74,91,.5);
+  }
+  .sheet[hidden]{ display:none; }
+
+  .sheet-card{
+    width:100%; max-width:320px; max-height:100%;
+    overflow:auto;
+    padding:18px;
+    border-radius:26px;
+    background:var(--cream);
+    box-shadow:0 12px 34px rgba(42,74,91,.35);
+    text-align:center;
+  }
+  .sheet-title{ font-size:15px; font-weight:700; opacity:.55; }
+  .sheet-value{
+    font-size:44px; font-weight:800;
+    font-variant-numeric:tabular-nums;
+    margin:2px 0 14px;
+  }
+  .keys{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .key{
+    min-height:56px;
+    border:0; border-radius:16px;
+    background:#FFFFFF; color:var(--ink);
+    box-shadow:0 3px 0 rgba(42,74,91,.13);
+    font:inherit; font-size:23px; font-weight:800;
+    cursor:pointer;
+  }
+  .key:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(42,74,91,.13); }
+  .key.go{ background:var(--leaf); color:#fff; box-shadow:0 3px 0 var(--leaf-d); }
+  .key.go:active{ box-shadow:0 1px 0 var(--leaf-d); }
+  .sheet-cancel{
+    width:100%; min-height:46px; margin-top:10px;
+    border:0; border-radius:16px; background:transparent;
+    color:var(--ink); opacity:.6;
+    font:inherit; font-size:16px; font-weight:700; cursor:pointer;
   }
 
-  .app[data-locked="true"] .presets{ opacity:.35; pointer-events:none; }
+  .app[data-locked="true"] .dial{ opacity:.35; pointer-events:none; }
+
+  /* ---- landscape: hourglass on the left, controls on the right ---- */
+  @media (orientation:landscape) and (max-height:600px){
+    .app{
+      grid-template-areas:
+        "stage bar"
+        "stage caption"
+        "stage stop"
+        "stage dial";
+      grid-template-columns:1fr minmax(220px, 46%);
+      grid-template-rows:auto 1fr auto auto;
+      column-gap:18px;
+    }
+    .caption{ padding-top:0; }
+    .caption.cheer{ font-size:26px; }
+    .stop{ min-height:54px; margin-top:8px; font-size:18px; }
+    .dial{ padding-top:10px; }
+    .step, .timeset{ min-height:56px; }
+    .step{ width:56px; font-size:26px; }
+    .timeset b{ font-size:23px; }
+    .hill{ display:none; }
+    .key{ min-height:44px; font-size:20px; }
+    .sheet-value{ font-size:34px; margin-bottom:10px; }
+    .sheet-card{ max-width:300px; padding:14px; }
+  }
 
   :focus-visible{ outline:3px solid var(--coral-d); outline-offset:3px; }
 
@@ -357,7 +438,36 @@
     Stop the bell
   </button>
 
-  <nav class="presets" id="presets" aria-label="Timer length"></nav>
+  <div class="dial" id="dial">
+    <button class="step" id="minus" type="button" aria-label="Less time">&minus;</button>
+    <button class="timeset" id="timeset" type="button" aria-label="Set timer length">
+      <b id="timesetValue">2:00</b>
+      <span>tap to set</span>
+    </button>
+    <button class="step" id="plus" type="button" aria-label="More time">+</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Set timer length">
+    <div class="sheet-title">Timer length</div>
+    <div class="sheet-value" id="sheetValue">0:00</div>
+    <div class="keys" id="keys">
+      <button class="key" data-d="1" type="button">1</button>
+      <button class="key" data-d="2" type="button">2</button>
+      <button class="key" data-d="3" type="button">3</button>
+      <button class="key" data-d="4" type="button">4</button>
+      <button class="key" data-d="5" type="button">5</button>
+      <button class="key" data-d="6" type="button">6</button>
+      <button class="key" data-d="7" type="button">7</button>
+      <button class="key" data-d="8" type="button">8</button>
+      <button class="key" data-d="9" type="button">9</button>
+      <button class="key" id="back" type="button" aria-label="Delete">&#9003;</button>
+      <button class="key" data-d="0" type="button">0</button>
+      <button class="key go" id="setBtn" type="button">Set</button>
+    </div>
+    <button class="sheet-cancel" id="sheetCancel" type="button">Cancel</button>
+  </div>
 </div>
 
 <script>
@@ -381,11 +491,22 @@
   var caption    = document.getElementById("caption");
   var lockBtn    = document.getElementById("lock");
   var shackle    = document.getElementById("shackle");
-  var presetsEl  = document.getElementById("presets");
   var stopBtn    = document.getElementById("stop");
+  var minusBtn   = document.getElementById("minus");
+  var plusBtn    = document.getElementById("plus");
+  var timesetBtn = document.getElementById("timeset");
+  var timesetVal = document.getElementById("timesetValue");
+  var sheet      = document.getElementById("sheet");
+  var sheetValue = document.getElementById("sheetValue");
+  var keysEl     = document.getElementById("keys");
+  var backKey    = document.getElementById("back");
+  var setKey     = document.getElementById("setBtn");
+  var cancelKey  = document.getElementById("sheetCancel");
 
   /* ---------- settings ---------- */
-  var PRESETS  = [30, 60, 120, 180, 300, 600];  // seconds
+  var MIN_SECONDS = 5;                          // shortest timer allowed
+  var MAX_SECONDS = 99 * 60 + 59;               // 99:59
+  var STEP_SECONDS = 30;                        // what the - and + buttons change
   var RING_MS  = 10000;                         // how long the bell keeps ringing
   var RING_GAP = 1200;                          // milliseconds between rings
 
@@ -398,26 +519,84 @@
   var locked = false;
   var wakeLock = null;
 
-  /* ---------- presets ---------- */
-  PRESETS.forEach(function (secs) {
-    var b = document.createElement("button");
-    b.className = "chip";
-    b.type = "button";
-    b.textContent = secs < 60 ? secs + "s" : (secs / 60) + "m";
-    b.setAttribute("aria-pressed", String(secs * 1000 === duration));
-    b.dataset.secs = String(secs);
-    b.addEventListener("click", function () { choose(secs); });
-    presetsEl.appendChild(b);
+  /* ---------- setting the length ---------- */
+  function clampSecs(secs) {
+    return Math.max(MIN_SECONDS, Math.min(MAX_SECONDS, secs));
+  }
+
+  function setDuration(secs) {
+    duration = clampSecs(secs) * 1000;
+    save("duration", duration / 1000);
+    timesetVal.textContent = clock(duration);
+    reset();
+  }
+
+  // the - / + buttons move to the nearest round step rather than a ragged offset
+  minusBtn.addEventListener("click", function () {
+    var secs = duration / 1000;
+    var next = secs % STEP_SECONDS ? Math.floor(secs / STEP_SECONDS) * STEP_SECONDS
+                                   : secs - STEP_SECONDS;
+    setDuration(next);
   });
 
-  function choose(secs) {
-    duration = secs * 1000;
-    save("duration", secs);
-    reset();
-    Array.prototype.forEach.call(presetsEl.children, function (c) {
-      c.setAttribute("aria-pressed", String(Number(c.dataset.secs) === secs));
-    });
+  plusBtn.addEventListener("click", function () {
+    var secs = duration / 1000;
+    var next = secs % STEP_SECONDS ? Math.ceil(secs / STEP_SECONDS) * STEP_SECONDS
+                                   : secs + STEP_SECONDS;
+    setDuration(next);
+  });
+
+  /* ---------- number pad: type it like a microwave, mmss ---------- */
+  var typed = "";
+
+  function typedToSeconds() {
+    var d = typed.padStart(4, "0");
+    var mm = parseInt(d.slice(0, 2), 10);
+    var ss = parseInt(d.slice(2), 10);
+    return mm * 60 + ss;
   }
+
+  function paintSheet() {
+    // show what will actually be set, so 74 reads as 1:14 rather than 0:74
+    sheetValue.textContent = typed === "" ? "0:00" : clock(typedToSeconds() * 1000);
+    setKey.disabled = typed === "" || typedToSeconds() < MIN_SECONDS;
+  }
+
+  function openSheet() {
+    if (locked) return;
+    typed = "";
+    paintSheet();
+    sheet.hidden = false;
+  }
+
+  function closeSheet() { sheet.hidden = true; }
+
+  timesetBtn.addEventListener("click", openSheet);
+  cancelKey.addEventListener("click", closeSheet);
+
+  sheet.addEventListener("click", function (e) {
+    if (e.target === sheet) closeSheet();          // tap the dimmed area to dismiss
+  });
+
+  keysEl.addEventListener("click", function (e) {
+    var btn = e.target.closest(".key");
+    if (!btn || !btn.dataset.d) return;
+    if (typed.length < 4) typed += btn.dataset.d;
+    if (typed === "0") typed = "";                 // no leading zero only
+    paintSheet();
+  });
+
+  backKey.addEventListener("click", function () {
+    typed = typed.slice(0, -1);
+    paintSheet();
+  });
+
+  setKey.addEventListener("click", function () {
+    var secs = typedToSeconds();
+    if (secs < MIN_SECONDS) return;
+    setDuration(secs);
+    closeSheet();
+  });
 
   /* ---------- timer control ---------- */
   function start() {
@@ -757,6 +936,7 @@
     });
   }
 
+  timesetVal.textContent = clock(duration);
   render();
 })();
 </script>
