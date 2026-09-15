@@ -95,6 +95,21 @@
   }
   .readout.done{ color:var(--leaf-d); opacity:1; }
 
+  .install-wrap{ display:flex; align-items:center; gap:4px; }
+  .install-wrap[hidden]{ display:none; }
+
+  .install-x{
+    flex:none;
+    width:34px; height:34px;
+    display:grid; place-items:center;
+    border:0; border-radius:50%;
+    background:rgba(42,74,91,.10);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .install-x svg{ width:13px; height:13px; }
+  .install-x:active{ background:rgba(42,74,91,.2); }
+
   .install{
     display:flex; align-items:center; gap:7px;
     height:42px; padding:0 16px;
@@ -230,12 +245,18 @@
   /* ---- landscape: hourglass on the left, controls on the right ---- */
   @media (orientation:landscape) and (max-height:600px){
     .app{
+      /* the portrait cap would squeeze both columns into a narrow strip */
+      max-width:980px;
+      /* svh, not dvh, so it still fits while Safari's bars are showing */
+      height:100svh;
+      padding-top:calc(env(safe-area-inset-top) + 6px);
+      padding-bottom:calc(env(safe-area-inset-bottom) + 8px);
       grid-template-areas:
         "stage bar"
         "stage caption"
         "stage stop"
         "stage dial";
-      grid-template-columns:1fr minmax(220px, 46%);
+      grid-template-columns:minmax(0, 1.25fr) minmax(200px, .85fr);
       grid-template-rows:auto 1fr auto auto;
       column-gap:18px;
     }
@@ -247,6 +268,7 @@
     .step{ width:56px; font-size:26px; }
     .timeset b{ font-size:23px; }
     .hill{ display:none; }
+    .bar{ min-height:40px; }
     .key{ min-height:44px; font-size:20px; }
     .sheet-value{ font-size:34px; margin-bottom:10px; }
     .sheet-card{ max-width:300px; padding:14px; }
@@ -313,12 +335,19 @@
   <header class="bar">
     <span class="readout" id="readout">2:00</span>
 
-    <button class="install" id="install" type="button" hidden>
+    <div class="install-wrap" id="installWrap" hidden>
+    <button class="install" id="install" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 3v12"></path><path d="M7 11l5 5 5-5"></path><path d="M4 20h16"></path>
       </svg>
       Install
     </button>
+    <button class="install-x" id="installDismiss" type="button" aria-label="Hide the install button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true">
+        <path d="M6 6l12 12M18 6L6 18"></path>
+      </svg>
+    </button>
+    </div>
     <button class="lock" id="lock" data-locked="false" aria-label="Child lock">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="4" y="10" width="16" height="11" rx="3.5"></rect>
@@ -427,7 +456,7 @@
     </svg>
   </main>
 
-  <div class="caption" id="caption">Tap to start</div>
+  <div class="caption" id="caption">Tap timer to start</div>
 
   <button class="stop" id="stop" type="button" hidden>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true">
@@ -719,9 +748,9 @@
     } else {
       caption.className = "caption";
       if (locked) caption.textContent = "Hold the lock to unlock";
-      else if (running) caption.textContent = "Tap to pause";
-      else if (ms < duration) caption.textContent = "Tap to keep going · hold to start over";
-      else caption.textContent = "Tap to start";
+      else if (running) caption.textContent = "Tap timer to pause";
+      else if (ms < duration) caption.textContent = "Tap timer to continue · hold to restart";
+      else caption.textContent = "Tap timer to start";
     }
   }
 
@@ -909,7 +938,9 @@
   }
 
   /* ---------- install button (Chrome / Edge / Samsung Internet) ---------- */
-  var installBtn = document.getElementById("install");
+  var installBtn  = document.getElementById("install");
+  var installWrap = document.getElementById("installWrap");
+  var dismissBtn  = document.getElementById("installDismiss");
   var deferredPrompt = null;
 
   window.addEventListener("beforeinstallprompt", function (e) {
@@ -917,19 +948,26 @@
     deferredPrompt = e;
     var standalone = false;
     try { standalone = window.matchMedia("(display-mode: standalone)").matches; } catch (err) {}
-    if (!standalone) installBtn.hidden = false;
+    // stay out of the way if they've already said no thanks
+    if (!standalone && !load("noInstall", 0)) installWrap.hidden = false;
   });
 
   installBtn.addEventListener("click", function (e) {
     e.preventDefault();
     if (!deferredPrompt) return;
-    installBtn.hidden = true;
+    installWrap.hidden = true;
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
   });
 
+  dismissBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    installWrap.hidden = true;
+    save("noInstall", 1);          // remembered, so it doesn't reappear every visit
+  });
+
   window.addEventListener("appinstalled", function () {
-    installBtn.hidden = true;
+    installWrap.hidden = true;
     deferredPrompt = null;
   });
 

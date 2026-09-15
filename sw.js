@@ -1,5 +1,5 @@
 /* Bump CACHE when you change any file, so phones pick up the new version. */
-const CACHE = "sand-timer-v6";
+const CACHE = "sand-timer-v9";
 const ASSETS = [
   "./",
   "./index.html",

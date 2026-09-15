@@ -12,7 +12,7 @@ around it while a soft bell rings for ten seconds.
 
 | Action | What happens |
 |---|---|
-| Tap the timer | Start / pause (or silence the bell, if it's ringing) |
+| Tap the timer | Start / pause (or silence the bell, if it's ringing) — the on-screen caption says "Tap timer to start" |
 | Press and hold the timer (0.7s) | Start over from full |
 | Tap **−** / **+** | Change the length in 30-second steps |
 | Tap the time in the middle | Open a number pad and type any length |
@@ -59,7 +59,13 @@ Open the address in Chrome. If Chrome considers the app installable, a green
 **Install** button appears in the app's own top bar — tap that. It is the same
 install, without hunting through menus, and if it never appears then Chrome is not
 treating the app as installable (usually `manifest.json` or `sw.js` missing from
-the site root). The menu route is **⋮ → Install and create shortcuts → Install**. Choose *Install*, not
+the site root). The menu route is **⋮ → Install and create shortcuts → Install**.
+
+Next to the Install button is a small **×**. Tapping it hides the button for good
+on that browser, for anyone who just wants to use the timer in a tab. The choice is
+stored per device, so it only affects the person who dismissed it — everyone you
+share the link with still sees the offer. To bring it back, clear the site's data
+in the browser settings. Choose *Install*, not
 *Add to Home screen*: install gives a standalone app with its own icon, splash
 screen and task-switcher entry, while Add to Home screen only makes a bookmark
 that reopens Chrome. Chrome's install criteria are a manifest with a name, 192px
@@ -108,7 +114,7 @@ Everything lives in `index.html`, near the top of the `<script>` block.
   note frequencies (C5–E5–G5), and `0.22` in the gain ramp is the volume.
 - **Hold-to-restart delay** — the `700` in the `pointerdown` handler on the glass.
 
-After editing, bump `const CACHE = "sand-timer-v6"` in `sw.js` to `v7`, or installed
+After editing, bump `const CACHE = "sand-timer-v9"` in `sw.js` to `v10`, or installed
 phones will keep serving the old cached version.
 
 ## Known limitations
