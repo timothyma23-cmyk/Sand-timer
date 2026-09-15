@@ -91,6 +91,10 @@ first load, and behaves the same afterwards.
 
 Everything lives in `index.html`, near the top of the `<script>` block.
 
+- **How the sand moves** — `var SAND_EXPONENT = 1;`. At 1 the sand level tracks
+  elapsed time evenly: half the time gone means half the level. Set it to 0.5 for
+  the physically accurate version, where volume drains at a constant rate — true
+  to a real hourglass, but the level barely moves early on and races at the end.
 - **Step size for − / +** — `var STEP_SECONDS = 30;`.
 - **Shortest and longest allowed** — `var MIN_SECONDS = 5;` and `var MAX_SECONDS`
   (99:59 by default).
@@ -104,7 +108,7 @@ Everything lives in `index.html`, near the top of the `<script>` block.
   note frequencies (C5–E5–G5), and `0.22` in the gain ramp is the volume.
 - **Hold-to-restart delay** — the `700` in the `pointerdown` handler on the glass.
 
-After editing, bump `const CACHE = "sand-timer-v5"` in `sw.js` to `v6`, or installed
+After editing, bump `const CACHE = "sand-timer-v6"` in `sw.js` to `v7`, or installed
 phones will keep serving the old cached version.
 
 ## Known limitations

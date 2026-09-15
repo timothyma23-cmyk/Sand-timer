@@ -507,6 +507,10 @@
   var MIN_SECONDS = 5;                          // shortest timer allowed
   var MAX_SECONDS = 99 * 60 + 59;               // 99:59
   var STEP_SECONDS = 30;                        // what the - and + buttons change
+  // 1 = the sand level tracks elapsed time evenly (half the time, half the level).
+  // 0.5 = physically accurate for a real hourglass, where volume drains evenly,
+  // but the level then barely moves early on and races at the end.
+  var SAND_EXPONENT = 1;
   var RING_MS  = 10000;                         // how long the bell keeps ringing
   var RING_GAP = 1200;                          // milliseconds between rings
 
@@ -639,11 +643,11 @@
   /* ---------- drawing ---------- */
   function draw(fraction) {
     var f = Math.max(0, Math.min(1, fraction));
-    var root = Math.sqrt(f);
+    var level = Math.pow(f, SAND_EXPONENT);
 
     // top bulb — sand drains toward the neck, with a funnel dip in the surface
-    var ys = NECK - BULB_H * root;
-    var hw = HALF_W * root;
+    var ys = NECK - BULB_H * level;
+    var hw = HALF_W * level;
     if (f <= 0.0005) {
       sandTop.setAttribute("d", "");
     } else {
@@ -656,8 +660,8 @@
 
     // bottom bulb — a cone of sand piles up under the stream
     var g = 1 - f;
-    var yp = BOT_APEX + BULB_H * root;
-    var hwp = HALF_W * root;
+    var yp = BOT_APEX + BULB_H * level;
+    var hwp = HALF_W * level;
     var peak = 34 * Math.min(1, g / 0.2) * Math.min(1, (yp - BOT_APEX) / 55);
     var peakY = Math.max(BOT_APEX + 2, yp - peak);
     var edgeY = Math.min(BOT_BASE, yp + peak * 0.4);
